@@ -1,0 +1,237 @@
+.dashboard {
+  min-height: 100vh;
+  background-color: var(--surface-0);
+}
+
+.dashboard-header {
+  background-color: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.header-content p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.user-email {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.logout-button {
+  padding: 0.6rem 1.2rem;
+  background-color: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: var(--surface-1);
+}
+
+.dashboard-content {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.filters-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  flex: 1;
+  min-width: 300px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filter-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 0.6rem;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+  outline: none;
+  border-color: var(--fill-accent);
+  box-shadow: 0 0 0 2px var(--bg-accent);
+}
+
+.btn-add-cliente {
+  padding: 0.8rem 1.5rem;
+  background-color: var(--fill-accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.btn-add-cliente:hover {
+  background-color: var(--fill-accent-hover);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--fill-accent);
+}
+
+.table-wrapper {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.clientes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.clientes-table thead {
+  background-color: var(--surface-1);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.clientes-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.clientes-table td {
+  padding: 1rem;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 14px;
+}
+
+.clientes-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.clientes-table tbody tr:hover {
+  background-color: var(--surface-1);
+}
+
+.cliente-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-em-negociacao {
+  background-color: var(--bg-warning);
+  color: #856404;
+}
+
+.badge-concluido {
+  background-color: var(--bg-success);
+  color: #155724;
+}
+
+.btn-details {
+  padding: 0.4rem 0.8rem;
+  background-color: transparent;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-accent);
+  transition: background-color 0.2s;
+}
+
+.btn-details:hover {
+  background-color: var(--surface-1);
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}

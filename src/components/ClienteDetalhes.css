@@ -1,0 +1,465 @@
+.cliente-detalhes {
+  min-height: 100vh;
+  background-color: var(--surface-0);
+  padding-bottom: 2rem;
+}
+
+.detalhes-header {
+  background-color: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.back-button {
+  padding: 0.6rem 1.2rem;
+  background-color: transparent;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: var(--surface-1);
+}
+
+.detalhes-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cliente-info-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.info-block {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.info-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.info-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0.3rem 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+.status-em-negociacao {
+  background-color: var(--bg-warning);
+  color: #856404;
+}
+
+.status-concluido {
+  background-color: var(--bg-success);
+  color: #155724;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: var(--fill-accent);
+  border-bottom-color: var(--fill-accent);
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.section {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem;
+}
+
+.btn-add {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--fill-accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+  background-color: var(--fill-accent-hover);
+}
+
+.form-nova-ligacao {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 0.6rem;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font-sans);
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--fill-accent);
+  box-shadow: 0 0 0 2px var(--bg-accent);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-submit {
+  flex: 1;
+  padding: 0.8rem 1.5rem;
+  background-color: var(--fill-accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: var(--fill-accent-hover);
+}
+
+.btn-submit.btn-success {
+  background-color: var(--fill-success);
+}
+
+.btn-submit.btn-success:hover {
+  background-color: #218838;
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 0.8rem 1.5rem;
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-cancel:hover {
+  background-color: var(--surface-1);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ligacoes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.ligacao-card {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.ligacao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.ligacao-data {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.ligacao-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.btn-delete {
+  padding: 0.4rem 0.8rem;
+  background-color: transparent;
+  border: 0.5px solid var(--text-danger);
+  color: var(--text-danger);
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+  background-color: #ffe5e5;
+}
+
+.ligacao-resumo {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.valor-disponivel-card {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.valor-disponivel-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+}
+
+.valor-input-group {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.valor-input-group input {
+  flex: 1;
+  padding: 0.6rem;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.valor-input-group input:focus {
+  outline: none;
+  border-color: var(--fill-accent);
+  box-shadow: 0 0 0 2px var(--bg-accent);
+}
+
+.btn-atualizar {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--fill-accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-atualizar:hover {
+  background-color: var(--fill-accent-hover);
+}
+
+.current-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.conclusao-section {
+  background-color: #d4edda;
+  border: 1px solid #28a745;
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.conclusao-section h3 {
+  color: #155724;
+  margin-top: 0;
+}
+
+.conclusao-form {
+  margin-top: 1rem;
+}
+
+.negociacoes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.negociacao-card {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.neg-data {
+  font-weight: 600;
+  color: var(--fill-success);
+  min-width: 100px;
+  padding-top: 0.5rem;
+}
+
+.neg-details {
+  flex: 1;
+}
+
+.neg-details p {
+  font-size: 14px;
+  margin: 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .cliente-info-card {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-buttons {
+    flex-wrap: wrap;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 1rem;
+  }
+
+  .negociacao-card {
+    flex-direction: column;
+  }
+}
