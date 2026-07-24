@@ -118,6 +118,31 @@
   background-color: var(--fill-accent-hover);
 }
 
+.header-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-exportar {
+  padding: 0.8rem 1.5rem;
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-exportar:hover {
+  background-color: var(--surface-1);
+}
+
+.stat-honorarios .stat-value {
+  color: var(--fill-accent, #2e7d32);
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

@@ -151,13 +151,24 @@ export async function saveNegociacaoConcluida(negociacao) {
 
 export async function getNegociacoesConcluidas(clienteId) {
   if (!supabase) return { data: [], error: null }
-  
+
   const { data, error } = await supabase
     .from('negociacoes_concluidas')
     .select('*')
     .eq('cliente_id', clienteId)
     .order('data_formalizacao', { ascending: false })
-  
+
+  return { data, error }
+}
+
+export async function getTodasNegociacoesConcluidas() {
+  if (!supabase) return { data: [], error: null }
+
+  const { data, error } = await supabase
+    .from('negociacoes_concluidas')
+    .select('*')
+    .order('data_formalizacao', { ascending: false })
+
   return { data, error }
 }
 

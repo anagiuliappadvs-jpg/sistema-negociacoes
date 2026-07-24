@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
-import { updateCliente, getLigacoesByCliente, saveLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida } from '../lib/supabase'
+import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida } from '../lib/supabase'
 import './ClienteDetalhes.css'
 
 // Data de hoje no fuso local (evita o "pulo" de um dia do toISOString em UTC)
@@ -40,6 +40,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
   const [conclusaoForm, setConclausaoForm] = useState({
     valor_divida_atualizado: cliente.valor_divida_atualizado ?? '',
     valor_final_acordo: '',
+    percentual_honorarios: cliente.percentual_honorarios ?? 20,
     valor_honorarios: '',
     data_formalizacao: hojeLocal(),
     responsavel: '',
@@ -127,15 +128,15 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     }
   }
 
-  // Honorários de êxito = percentual do cliente x desconto obtido (dívida atualizada - valor formalizado)
-  const calcHonorarios = (atualizado, formalizado) => {
-    const pct = parseFloat(dados.percentual_honorarios)
+  // Honorários de êxito = percentual x desconto obtido (dívida atualizada - valor formalizado)
+  const calcHonorarios = (atualizado, formalizado, pct) => {
+    const p = parseFloat(pct)
     const a = parseFloat(atualizado)
     const f = parseFloat(formalizado)
-    if (isNaN(pct) || isNaN(a) || isNaN(f)) return ''
+    if (isNaN(p) || isNaN(a) || isNaN(f)) return ''
     const desconto = a - f
     if (desconto <= 0) return ''
-    return (desconto * pct / 100).toFixed(2)
+    return (desconto * p / 100).toFixed(2)
   }
 
   const handleConcluirNegociacao = async (e) => {
@@ -171,69 +172,113 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     }
   }
 
+  const handleExcluirCliente = async () => {
+    if (!window.confirm(`Excluir o cliente "${dados.nome}"?\n\nIsso apaga também todas as ligações e negociações registradas dele. Não dá para desfazer.`)) return
+    const { error } = await deleteCliente(cliente.id)
+    if (error) {
+      alert('Erro ao excluir: ' + (error.message || error))
+    } else {
+      onBack()
+    }
+  }
+
   const gerarRelatorio = () => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' })
-    const M = 48                     // margem
     const W = doc.internal.pageSize.getWidth()
-    const LW = W - M * 2             // largura útil
-    let y = M
+    const H = doc.internal.pageSize.getHeight()
+    const M = 64
+    const LW = W - M * 2
+    const NAVY = [37, 47, 63], GOLD = [176, 141, 74], GRAY = [120, 130, 140], TX = [45, 52, 64]
+    const TOP = 132            // onde o conteúdo começa (abaixo do timbre)
+    const FOOTER_Y = H - 42
 
-    const quebraPagina = (precisa = 16) => {
-      if (y + precisa > doc.internal.pageSize.getHeight() - M) {
-        doc.addPage(); y = M
-      }
+    // --- desenha o papel timbrado (cabeçalho + marca d'água + rodapé) em cada página ---
+    const desenharTimbrado = () => {
+      // marca d'água (chevron dourado, bem suave)
+      try {
+        doc.saveGraphicsState()
+        doc.setGState(new doc.GState({ opacity: 0.035 }))
+        doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2])
+        doc.setLineWidth(9)
+        const cx = W / 2, cy = H / 2 + 10
+        for (const off of [-42, 14]) {
+          doc.line(cx - 78, cy - 52 + off, cx, cy + 20 + off)
+          doc.line(cx + 78, cy - 52 + off, cx, cy + 20 + off)
+        }
+        doc.restoreGraphicsState()
+      } catch (e) { /* GState indisponível: segue sem marca d'água */ }
+
+      // wordmark: PACCOLA & PELEGRINI  (& em dourado)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(25)
+      const p1 = 'PACCOLA ', amp = '& ', p2 = 'PELEGRINI'
+      const w1 = doc.getTextWidth(p1), wa = doc.getTextWidth(amp), w2 = doc.getTextWidth(p2)
+      const startX = (W - (w1 + wa + w2)) / 2, topY = 60
+      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]); doc.text(p1, startX, topY)
+      doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]); doc.text(amp, startX + w1, topY)
+      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]); doc.text(p2, startX + w1 + wa, topY)
+
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(GRAY[0], GRAY[1], GRAY[2])
+      doc.text('A D V O G A D O S   A S S O C I A D O S', W / 2, topY + 16, { align: 'center' })
+
+      doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2]); doc.setLineWidth(1)
+      doc.line(M, topY + 30, W - M, topY + 30)
+
+      // rodapé
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(GRAY[0], GRAY[1], GRAY[2])
+      doc.text('(14) 99133-3863  |  contato@paccolaepelegrini.com.br', W / 2, FOOTER_Y, { align: 'center' })
     }
-    const linha = (texto, { size = 10, bold = false, cor = 40, gap = 14 } = {}) => {
-      doc.setFont('helvetica', bold ? 'bold' : 'normal')
-      doc.setFontSize(size)
-      doc.setTextColor(cor)
-      const linhas = doc.splitTextToSize(texto, LW)
-      for (const l of linhas) { quebraPagina(gap); doc.text(l, M, y); y += gap }
+
+    let y = TOP
+    const novaPagina = () => { doc.addPage(); desenharTimbrado(); y = TOP }
+    const quebra = (h = 16) => { if (y + h > FOOTER_Y - 24) novaPagina() }
+    const linha = (texto, { size = 10, bold = false, cor = TX, gap = 14 } = {}) => {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size)
+      doc.setTextColor(cor[0], cor[1], cor[2])
+      for (const l of doc.splitTextToSize(texto, LW)) { quebra(gap); doc.text(l, M, y); y += gap }
+    }
+    const secao = (titulo) => {
+      quebra(30); y += 6
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2])
+      doc.text(titulo, M, y)
+      doc.setDrawColor(225, 225, 228); doc.setLineWidth(0.5); doc.line(M, y + 5, W - M, y + 5)
+      y += 20
     }
 
-    // Cabeçalho
-    doc.setFillColor(30, 41, 59)
-    doc.rect(0, 0, W, 72, 'F')
-    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15)
-    doc.text('Paccola & Pelegrini Advogados', M, 34)
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
-    doc.text('Relatório de Negociação Bancária', M, 54)
-    y = 100
+    desenharTimbrado()
 
-    linha(`Emitido em ${formatarDataBR(hojeLocal())}`, { size: 9, cor: 120, gap: 18 })
+    // título do documento
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(NAVY[0], NAVY[1], NAVY[2])
+    doc.text('RELATÓRIO DE NEGOCIAÇÃO', W / 2, y, { align: 'center' }); y += 16
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(GRAY[0], GRAY[1], GRAY[2])
+    doc.text(`Emitido em ${formatarDataBR(hojeLocal())}`, W / 2, y, { align: 'center' }); y += 22
 
-    // Dados do cliente
-    linha('DADOS DO CLIENTE', { size: 11, bold: true, cor: 30, gap: 18 })
+    secao('DADOS DO CLIENTE')
     linha(`Nome/Razão social: ${dados.nome}`)
-    linha(`CPF/CNPJ: ${dados.cpf_cnpj}    Telefone: ${dados.telefone}`)
+    linha(`CPF/CNPJ: ${dados.cpf_cnpj}     Telefone: ${dados.telefone}`)
     if (dados.email) linha(`E-mail: ${dados.email}`)
-    linha(`Credor: ${dados.banco || 'Múltiplos'}    Tipo de dívida: ${dados.tipo_divida || '—'}`)
+    linha(`Credor: ${dados.banco || 'Múltiplos'}     Tipo de dívida: ${dados.tipo_divida || '—'}`)
     if (dados.valor_divida_atualizado != null)
       linha(`Valor atualizado da dívida: R$ ${formatarMoeda(dados.valor_divida_atualizado)}`)
     if (dados.percentual_honorarios != null)
       linha(`Honorários contratados: ${dados.percentual_honorarios}% sobre o desconto obtido`)
-    y += 8
 
-    // Histórico de ligações/contatos
-    linha(`HISTÓRICO DE CONTATOS COM O CREDOR (${ligacoes.length})`, { size: 11, bold: true, cor: 30, gap: 18 })
+    secao(`HISTÓRICO DE CONTATOS COM O CREDOR (${ligacoes.length})`)
     if (ligacoes.length === 0) {
-      linha('Nenhum contato registrado.', { cor: 120 })
+      linha('Nenhum contato registrado.', { cor: GRAY })
     } else {
       const ordenadas = [...ligacoes].sort((a, b) => String(a.data_ligacao).localeCompare(String(b.data_ligacao)))
       for (const lg of ordenadas) {
-        quebraPagina(28)
-        linha(`${formatarDataBR(lg.data_ligacao)}  •  ${lg.banco || ''}  •  ${lg.numero_ligado || ''}`, { size: 10, bold: true, gap: 14 })
-        if (lg.resumo) linha(lg.resumo, { size: 10, cor: 70, gap: 13 })
+        quebra(28)
+        linha(`${formatarDataBR(lg.data_ligacao)}  •  ${lg.banco || ''}  •  ${lg.numero_ligado || ''}`, { bold: true })
+        if (lg.resumo) linha(lg.resumo, { cor: [80, 88, 98], gap: 13 })
         y += 4
       }
     }
-    y += 8
 
-    // Negociações concluídas
     if (negociacoesConcluidas.length > 0) {
-      linha('NEGOCIAÇÃO FORMALIZADA', { size: 11, bold: true, cor: 30, gap: 18 })
+      secao('NEGOCIAÇÃO FORMALIZADA')
       for (const n of negociacoesConcluidas) {
-        quebraPagina(60)
+        quebra(64)
         linha(`Data da formalização: ${formatarDataBR(n.data_formalizacao)}`, { bold: true })
         if (n.valor_divida_atualizado != null)
           linha(`Valor atualizado da dívida: R$ ${formatarMoeda(n.valor_divida_atualizado)}`)
@@ -248,18 +293,15 @@ export default function ClienteDetalhes({ cliente, onBack }) {
       }
     }
 
-    // Rodapé em todas as páginas
+    // número de página no rodapé de cada página
     const total = doc.internal.getNumberOfPages()
     for (let i = 1; i <= total; i++) {
       doc.setPage(i)
-      doc.setFontSize(8); doc.setTextColor(150); doc.setFont('helvetica', 'normal')
-      doc.text('Documento gerado pelo Sistema de Negociações — Paccola & Pelegrini Advogados',
-        M, doc.internal.pageSize.getHeight() - 24)
-      doc.text(`Página ${i}/${total}`, W - M, doc.internal.pageSize.getHeight() - 24, { align: 'right' })
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(GRAY[0], GRAY[1], GRAY[2])
+      doc.text(`${i}/${total}`, W - M, FOOTER_Y, { align: 'right' })
     }
 
-    const nomeArq = `Relatorio_${dados.nome.replace(/[^\p{L}\p{N}]+/gu, '_').slice(0, 40)}.pdf`
-    doc.save(nomeArq)
+    doc.save(`Relatorio_${dados.nome.replace(/[^\p{L}\p{N}]+/gu, '_').slice(0, 40)}.pdf`)
   }
 
   if (loading) {
@@ -273,6 +315,9 @@ export default function ClienteDetalhes({ cliente, onBack }) {
         <h2>{dados.nome}</h2>
         <button onClick={gerarRelatorio} className="btn-relatorio">
           📄 Gerar relatório do cliente
+        </button>
+        <button onClick={handleExcluirCliente} className="btn-excluir-cliente">
+          Excluir
         </button>
       </header>
 
@@ -543,7 +588,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
                       setConclausaoForm({
                         ...conclusaoForm,
                         valor_final_acordo: v,
-                        valor_honorarios: calcHonorarios(conclusaoForm.valor_divida_atualizado, v) || conclusaoForm.valor_honorarios,
+                        valor_honorarios: calcHonorarios(conclusaoForm.valor_divida_atualizado, v, conclusaoForm.percentual_honorarios) || conclusaoForm.valor_honorarios,
                       })
                     }}
                     placeholder="R$ 0,00"
@@ -555,6 +600,24 @@ export default function ClienteDetalhes({ cliente, onBack }) {
 
               <div className="form-row">
                 <div className="form-group">
+                  <label>% de honorários</label>
+                  <input
+                    type="number"
+                    value={conclusaoForm.percentual_honorarios}
+                    onChange={(e) => {
+                      const p = e.target.value
+                      setConclausaoForm({
+                        ...conclusaoForm,
+                        percentual_honorarios: p,
+                        valor_honorarios: calcHonorarios(conclusaoForm.valor_divida_atualizado, conclusaoForm.valor_final_acordo, p) || conclusaoForm.valor_honorarios,
+                      })
+                    }}
+                    placeholder="20"
+                    step="0.1"
+                  />
+                  <span className="helper-text">Aplicado sobre o desconto obtido</span>
+                </div>
+                <div className="form-group">
                   <label>Honorários do escritório *</label>
                   <input
                     type="number"
@@ -564,9 +627,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
                     step="0.01"
                     required
                   />
-                  <span className="helper-text">
-                    Calculado automaticamente: {dados.percentual_honorarios != null ? `${dados.percentual_honorarios}% do desconto` : 'defina o % no cadastro'} — pode ajustar manualmente
-                  </span>
+                  <span className="helper-text">Calculado automaticamente — pode ajustar manualmente</span>
                 </div>
                 <div className="form-group">
                   <label>Data de formalização *</label>
