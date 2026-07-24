@@ -92,6 +92,87 @@
   color: #155724;
 }
 
+/* Observações + edição dos dados do cliente */
+.info-observacoes {
+  grid-column: 1 / -1;
+}
+
+.info-obs-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.btn-editar-dados {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 0.6rem 1.2rem;
+  background-color: transparent;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.btn-editar-dados:hover {
+  background-color: var(--surface-1);
+}
+
+.editar-dados-form {
+  display: block;
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.editar-dados-form .form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.editar-dados-form .form-group {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.editar-dados-form .form-group.full-width {
+  flex-basis: 100%;
+}
+
+.editar-dados-form label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.editar-dados-form input,
+.editar-dados-form select,
+.editar-dados-form textarea {
+  padding: 0.6rem 0.8rem;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background-color: var(--surface-0);
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.editar-dados-form .form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
 .tab-buttons {
   display: flex;
   gap: 1rem;
