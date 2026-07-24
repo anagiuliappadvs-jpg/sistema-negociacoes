@@ -201,7 +201,7 @@ export default function Dashboard({ session }) {
                           ? `R$ ${cliente.valor_disponivel.toLocaleString('pt-BR')}`
                           : '—'}
                       </td>
-                      <td>{cliente.ultimo_contato || '—'}</td>
+                      <td>{cliente.ultimo_contato ? cliente.ultimo_contato.slice(0, 10).split('-').reverse().join('/') : '—'}</td>
                       <td>
                         <span className={`badge badge-${cliente.status}`}>
                           {cliente.status === 'em-negociacao' ? 'Em negociação' : 'Concluído'}

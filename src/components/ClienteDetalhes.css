@@ -35,6 +35,23 @@
   margin: 0;
 }
 
+.btn-relatorio {
+  margin-left: auto;
+  padding: 0.6rem 1.2rem;
+  background-color: var(--text-primary);
+  color: var(--surface-0);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-relatorio:hover {
+  opacity: 0.85;
+}
+
 .cliente-info-card {
   display: grid;
   grid-template-columns: 1fr 1fr;
