@@ -68,6 +68,132 @@
   background-color: #fdecea;
 }
 
+.desconto-banner {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--bg-success, #eaf6ec);
+  border: 0.5px solid #bfe3c6;
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: #1e6b34;
+}
+
+.desconto-banner strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.desconto-pct {
+  color: #3a8b52;
+  font-weight: 600;
+}
+
+.dividas-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+}
+
+.form-nova-divida {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-nova-divida .form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-nova-divida .form-group {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-nova-divida .form-group.full-width { flex-basis: 100%; }
+
+.form-nova-divida label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.form-nova-divida input,
+.form-nova-divida textarea {
+  padding: 0.6rem 0.8rem;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background-color: var(--surface-0);
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.form-nova-divida .form-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.dividas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.divida-card {
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.divida-principal {
+  border-left: 3px solid var(--fill-accent, #2e7d32);
+}
+
+.divida-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.divida-banco {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.divida-tag {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.divida-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.divida-obs {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+  white-space: pre-wrap;
+}
+
 .cliente-info-card {
   display: grid;
   grid-template-columns: 1fr 1fr;

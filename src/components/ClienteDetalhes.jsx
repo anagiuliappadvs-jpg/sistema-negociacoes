@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
-import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida } from '../lib/supabase'
+import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida, getDividasByCliente, saveDivida, deleteDivida } from '../lib/supabase'
 import './ClienteDetalhes.css'
 
 // Data de hoje no fuso local (evita o "pulo" de um dia do toISOString em UTC)
@@ -27,6 +27,11 @@ function formatarMoeda(v) {
 export default function ClienteDetalhes({ cliente, onBack }) {
   const [ligacoes, setLigacoes] = useState([])
   const [negociacoesConcluidas, setNegociacoesConcluidas] = useState([])
+  const [dividas, setDividas] = useState([])
+  const [showNovaDivida, setShowNovaDivida] = useState(false)
+  const [novaDivida, setNovaDivida] = useState({
+    banco: '', tipo_divida: '', valor_divida_atualizado: '', percentual_honorarios: '', observacoes: '',
+  })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('negociacao')
   const [showNovaLigacao, setShowNovaLigacao] = useState(false)
@@ -101,9 +106,11 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     setLoading(true)
     const { data: ligacoesData } = await getLigacoesByCliente(cliente.id)
     const { data: negoData } = await getNegociacoesConcluidas(cliente.id)
-    
+    const { data: dividasData } = await getDividasByCliente(cliente.id)
+
     setLigacoes(ligacoesData || [])
     setNegociacoesConcluidas(negoData || [])
+    setDividas(dividasData || [])
     setLoading(false)
   }
 
@@ -168,6 +175,33 @@ export default function ClienteDetalhes({ cliente, onBack }) {
   const handleDeleteLigacao = async (id) => {
     if (window.confirm('Tem certeza que deseja deletar esta ligação?')) {
       await deleteLigacao(id)
+      loadData()
+    }
+  }
+
+  const handleAddDivida = async (e) => {
+    e.preventDefault()
+    const { error } = await saveDivida({
+      cliente_id: cliente.id,
+      banco: novaDivida.banco.trim() || null,
+      tipo_divida: novaDivida.tipo_divida.trim() || null,
+      valor_divida_atualizado: novaDivida.valor_divida_atualizado !== '' ? parseFloat(novaDivida.valor_divida_atualizado) : null,
+      percentual_honorarios: novaDivida.percentual_honorarios !== '' ? parseFloat(novaDivida.percentual_honorarios) : null,
+      observacoes: novaDivida.observacoes.trim() || null,
+      status: 'em-negociacao',
+    })
+    if (!error) {
+      setNovaDivida({ banco: '', tipo_divida: '', valor_divida_atualizado: '', percentual_honorarios: '', observacoes: '' })
+      setShowNovaDivida(false)
+      loadData()
+    } else {
+      alert('Erro ao adicionar dívida: ' + (error.message || error))
+    }
+  }
+
+  const handleDeleteDivida = async (id) => {
+    if (window.confirm('Remover esta dívida?')) {
+      await deleteDivida(id)
       loadData()
     }
   }
@@ -435,6 +469,86 @@ export default function ClienteDetalhes({ cliente, onBack }) {
         </form>
       )}
 
+      <div className="dividas-section">
+        <div className="section-header">
+          <h3>Dívidas ({dividas.length + 1})</h3>
+          <button onClick={() => setShowNovaDivida(true)} className="btn-add">
+            + Adicionar dívida
+          </button>
+        </div>
+
+        {showNovaDivida && (
+          <form onSubmit={handleAddDivida} className="form-nova-divida">
+            <div className="form-row">
+              <div className="form-group">
+                <label>Banco / Credor</label>
+                <input type="text" value={novaDivida.banco}
+                  onChange={(e) => setNovaDivida({ ...novaDivida, banco: e.target.value })}
+                  placeholder="Nome do banco" required />
+              </div>
+              <div className="form-group">
+                <label>Tipo de dívida</label>
+                <input type="text" value={novaDivida.tipo_divida}
+                  onChange={(e) => setNovaDivida({ ...novaDivida, tipo_divida: e.target.value })}
+                  placeholder="Financiamento, empréstimo..." />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Valor atualizado da dívida (R$)</label>
+                <input type="number" step="0.01" value={novaDivida.valor_divida_atualizado}
+                  onChange={(e) => setNovaDivida({ ...novaDivida, valor_divida_atualizado: e.target.value })}
+                  placeholder="R$ 0,00" />
+              </div>
+              <div className="form-group">
+                <label>Honorários (%)</label>
+                <input type="number" step="0.1" value={novaDivida.percentual_honorarios}
+                  onChange={(e) => setNovaDivida({ ...novaDivida, percentual_honorarios: e.target.value })}
+                  placeholder="20" />
+              </div>
+            </div>
+            <div className="form-group full-width">
+              <label>Observações</label>
+              <textarea rows="2" value={novaDivida.observacoes}
+                onChange={(e) => setNovaDivida({ ...novaDivida, observacoes: e.target.value })} />
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="btn-submit">Salvar dívida</button>
+              <button type="button" onClick={() => setShowNovaDivida(false)} className="btn-cancel">Cancelar</button>
+            </div>
+          </form>
+        )}
+
+        <div className="dividas-list">
+          <div className="divida-card divida-principal">
+            <div className="divida-topo">
+              <span className="divida-banco">{dados.banco || 'Múltiplos'}</span>
+              <span className="divida-tag">Dívida principal</span>
+            </div>
+            <div className="divida-meta">
+              Tipo: {dados.tipo_divida || '—'}
+              {dados.valor_divida_atualizado != null && ` • Valor: R$ ${formatarMoeda(dados.valor_divida_atualizado)}`}
+              {dados.percentual_honorarios != null && ` • Honorários: ${dados.percentual_honorarios}%`}
+            </div>
+          </div>
+
+          {dividas.map(d => (
+            <div key={d.id} className="divida-card">
+              <div className="divida-topo">
+                <span className="divida-banco">{d.banco || '—'}</span>
+                <button onClick={() => handleDeleteDivida(d.id)} className="btn-delete">Remover</button>
+              </div>
+              <div className="divida-meta">
+                Tipo: {d.tipo_divida || '—'}
+                {d.valor_divida_atualizado != null && ` • Valor: R$ ${formatarMoeda(d.valor_divida_atualizado)}`}
+                {d.percentual_honorarios != null && ` • Honorários: ${d.percentual_honorarios}%`}
+              </div>
+              {d.observacoes && <div className="divida-obs">{d.observacoes}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="tab-buttons">
         <button
           className={`tab-btn ${activeTab === 'negociacao' ? 'active' : ''}`}
@@ -570,7 +684,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
                       setConclausaoForm({
                         ...conclusaoForm,
                         valor_divida_atualizado: v,
-                        valor_honorarios: calcHonorarios(v, conclusaoForm.valor_final_acordo) || conclusaoForm.valor_honorarios,
+                        valor_honorarios: calcHonorarios(v, conclusaoForm.valor_final_acordo, conclusaoForm.percentual_honorarios) || conclusaoForm.valor_honorarios,
                       })
                     }}
                     placeholder="R$ 0,00"
@@ -597,6 +711,22 @@ export default function ClienteDetalhes({ cliente, onBack }) {
                   />
                 </div>
               </div>
+
+              {(() => {
+                const va = parseFloat(conclusaoForm.valor_divida_atualizado)
+                const vf = parseFloat(conclusaoForm.valor_final_acordo)
+                if (isNaN(va) || isNaN(vf) || va <= 0) return null
+                const desc = va - vf
+                if (desc <= 0) return null
+                const pct = (desc / va) * 100
+                return (
+                  <div className="desconto-banner">
+                    <span>Desconto obtido</span>
+                    <strong>R$ {formatarMoeda(desc)}</strong>
+                    <span className="desconto-pct">({pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)</span>
+                  </div>
+                )
+              })()}
 
               <div className="form-row">
                 <div className="form-group">

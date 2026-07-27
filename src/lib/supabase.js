@@ -186,11 +186,46 @@ export async function updateNegociacaoConcluida(id, updates) {
 
 export async function deleteNegociacaoConcluida(id) {
   if (!supabase) return { error: 'Supabase não configurado' }
-  
+
   const { error } = await supabase
     .from('negociacoes_concluidas')
     .delete()
     .eq('id', id)
-  
+
+  return { error }
+}
+
+// Dívidas adicionais do cliente
+export async function getDividasByCliente(clienteId) {
+  if (!supabase) return { data: [], error: null }
+
+  const { data, error } = await supabase
+    .from('dividas')
+    .select('*')
+    .eq('cliente_id', clienteId)
+    .order('created_at', { ascending: true })
+
+  return { data, error }
+}
+
+export async function saveDivida(divida) {
+  if (!supabase) return { error: 'Supabase não configurado' }
+
+  const { data, error } = await supabase
+    .from('dividas')
+    .insert([divida])
+    .select()
+
+  return { data, error }
+}
+
+export async function deleteDivida(id) {
+  if (!supabase) return { error: 'Supabase não configurado' }
+
+  const { error } = await supabase
+    .from('dividas')
+    .delete()
+    .eq('id', id)
+
   return { error }
 }
