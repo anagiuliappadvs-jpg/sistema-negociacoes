@@ -563,6 +563,27 @@
   background-color: #ffe5e5;
 }
 
+.ligacao-acoes {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-editar-ligacao {
+  padding: 0.4rem 0.8rem;
+  background-color: transparent;
+  border: 0.5px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-editar-ligacao:hover {
+  background-color: var(--surface-1);
+}
+
 .ligacao-resumo {
   font-size: 14px;
   color: var(--text-primary);

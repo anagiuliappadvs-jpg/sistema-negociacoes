@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
-import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida, getDividasByCliente, saveDivida, deleteDivida } from '../lib/supabase'
+import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, updateLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida, getDividasByCliente, saveDivida, deleteDivida } from '../lib/supabase'
 import './ClienteDetalhes.css'
 
 // Data de hoje no fuso local (evita o "pulo" de um dia do toISOString em UTC)
@@ -35,6 +35,8 @@ export default function ClienteDetalhes({ cliente, onBack }) {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('negociacao')
   const [showNovaLigacao, setShowNovaLigacao] = useState(false)
+  const [editandoLigacaoId, setEditandoLigacaoId] = useState(null)
+  const [ligacaoEdit, setLigacaoEdit] = useState({})
   const [showConcluir, setShowConcluir] = useState(false)
   const [novaLigacao, setNovaLigacao] = useState({
     data_ligacao: hojeLocal(),
@@ -175,6 +177,32 @@ export default function ClienteDetalhes({ cliente, onBack }) {
   const handleDeleteLigacao = async (id) => {
     if (window.confirm('Tem certeza que deseja deletar esta ligação?')) {
       await deleteLigacao(id)
+      loadData()
+    }
+  }
+
+  const abrirEdicaoLigacao = (lg) => {
+    setLigacaoEdit({
+      data_ligacao: String(lg.data_ligacao).slice(0, 10),
+      banco: lg.banco || '',
+      numero_ligado: lg.numero_ligado || '',
+      resumo: lg.resumo || '',
+    })
+    setEditandoLigacaoId(lg.id)
+  }
+
+  const handleSalvarLigacao = async (e) => {
+    e.preventDefault()
+    const { error } = await updateLigacao(editandoLigacaoId, {
+      data_ligacao: ligacaoEdit.data_ligacao,
+      banco: ligacaoEdit.banco.trim(),
+      numero_ligado: ligacaoEdit.numero_ligado.trim(),
+      resumo: ligacaoEdit.resumo.trim(),
+    })
+    if (error) {
+      alert('Erro ao salvar: ' + (error.message || error))
+    } else {
+      setEditandoLigacaoId(null)
       loadData()
     }
   }
@@ -632,21 +660,54 @@ export default function ClienteDetalhes({ cliente, onBack }) {
           ) : (
             <div className="ligacoes-list">
               {ligacoes.map(ligacao => (
-                <div key={ligacao.id} className="ligacao-card">
-                  <div className="ligacao-header">
-                    <div>
-                      <div className="ligacao-data">{formatarDataBR(ligacao.data_ligacao)}</div>
-                      <div className="ligacao-meta">{ligacao.banco} • {ligacao.numero_ligado}</div>
+                editandoLigacaoId === ligacao.id ? (
+                  <form key={ligacao.id} onSubmit={handleSalvarLigacao} className="form-nova-ligacao">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Data da ligação</label>
+                        <input type="date" value={ligacaoEdit.data_ligacao}
+                          onChange={(e) => setLigacaoEdit({ ...ligacaoEdit, data_ligacao: e.target.value })} required />
+                      </div>
+                      <div className="form-group">
+                        <label>Banco</label>
+                        <input type="text" value={ligacaoEdit.banco}
+                          onChange={(e) => setLigacaoEdit({ ...ligacaoEdit, banco: e.target.value })} required />
+                      </div>
+                      <div className="form-group">
+                        <label>Número ligado</label>
+                        <input type="text" value={ligacaoEdit.numero_ligado}
+                          onChange={(e) => setLigacaoEdit({ ...ligacaoEdit, numero_ligado: e.target.value })} required />
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteLigacao(ligacao.id)}
-                      className="btn-delete"
-                    >
-                      Deletar
-                    </button>
+                    <div className="form-group full-width">
+                      <label>Resumo do atendimento</label>
+                      <textarea rows="4" value={ligacaoEdit.resumo}
+                        onChange={(e) => setLigacaoEdit({ ...ligacaoEdit, resumo: e.target.value })} required />
+                    </div>
+                    <div className="form-actions">
+                      <button type="submit" className="btn-submit">Salvar alterações</button>
+                      <button type="button" onClick={() => setEditandoLigacaoId(null)} className="btn-cancel">Cancelar</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div key={ligacao.id} className="ligacao-card">
+                    <div className="ligacao-header">
+                      <div>
+                        <div className="ligacao-data">{formatarDataBR(ligacao.data_ligacao)}</div>
+                        <div className="ligacao-meta">{ligacao.banco} • {ligacao.numero_ligado}</div>
+                      </div>
+                      <div className="ligacao-acoes">
+                        <button onClick={() => abrirEdicaoLigacao(ligacao)} className="btn-editar-ligacao">
+                          Editar
+                        </button>
+                        <button onClick={() => handleDeleteLigacao(ligacao.id)} className="btn-delete">
+                          Deletar
+                        </button>
+                      </div>
+                    </div>
+                    <div className="ligacao-resumo">{ligacao.resumo}</div>
                   </div>
-                  <div className="ligacao-resumo">{ligacao.resumo}</div>
-                </div>
+                )
               ))}
             </div>
           )}
