@@ -143,6 +143,49 @@
   color: var(--fill-accent, #2e7d32);
 }
 
+.stat-comissao .stat-value {
+  color: #b8860b;
+}
+
+.dash-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.dash-tab {
+  padding: 0.8rem 1.4rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.dash-tab.active {
+  color: var(--fill-accent, #2e7d32);
+  border-bottom-color: var(--fill-accent, #2e7d32);
+}
+
+.dash-tab:hover {
+  color: var(--text-primary);
+}
+
+.col-comissao {
+  color: #b8860b;
+  font-weight: 600;
+}
+
+.linha-total td {
+  border-top: 2px solid var(--border-strong);
+  background-color: var(--surface-1);
+  font-size: 14px;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

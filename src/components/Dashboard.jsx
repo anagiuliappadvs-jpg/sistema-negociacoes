@@ -18,6 +18,10 @@ export default function Dashboard({ session }) {
   const [valorFilter, setValorFilter] = useState('todos')
   const [mesFilter, setMesFilter] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [dashTab, setDashTab] = useState('clientes')
+  const [mesConcluidas, setMesConcluidas] = useState('')
+
+  const COMISSAO_JULIA = 0.05
 
   useEffect(() => {
     loadClientes()
@@ -46,6 +50,41 @@ export default function Dashboard({ session }) {
     ? negociacoes.filter(n => String(n.data_formalizacao).slice(0, 7) === mesFilter)
     : negociacoes
   const honorariosTotal = negParaTotal.reduce((s, n) => s + Number(n.valor_honorarios || 0), 0)
+
+  // ----- aba "Negociações concluídas" -----
+  const nomePorCliente = {}
+  clientes.forEach(c => { nomePorCliente[c.id] = c.nome })
+
+  const concluidasFiltradas = (mesConcluidas
+    ? negociacoes.filter(n => String(n.data_formalizacao).slice(0, 7) === mesConcluidas)
+    : negociacoes
+  ).slice().sort((a, b) => String(b.data_formalizacao).localeCompare(String(a.data_formalizacao)))
+
+  const totalAcordoConc = concluidasFiltradas.reduce((s, n) => s + Number(n.valor_final_acordo || 0), 0)
+  const totalHonorConc = concluidasFiltradas.reduce((s, n) => s + Number(n.valor_honorarios || 0), 0)
+  const totalComissaoJulia = totalHonorConc * COMISSAO_JULIA
+
+  const exportarConcluidas = () => {
+    const cols = ['Cliente', 'Data da formalização', 'Valor do acordo', 'Honorários do escritório', 'Comissão Julia (5%)', 'Responsável']
+    const linhas = concluidasFiltradas.map(n => [
+      nomePorCliente[n.cliente_id] || '—',
+      fmtData(n.data_formalizacao),
+      fmtMoeda(n.valor_final_acordo),
+      fmtMoeda(n.valor_honorarios),
+      fmtMoeda(Number(n.valor_honorarios || 0) * COMISSAO_JULIA),
+      n.responsavel || '',
+    ])
+    linhas.push(['TOTAL', '', fmtMoeda(totalAcordoConc), fmtMoeda(totalHonorConc), fmtMoeda(totalComissaoJulia), ''])
+    const esc = v => '"' + (v == null ? '' : String(v)).replace(/"/g, '""') + '"'
+    const csv = '﻿' + [cols, ...linhas].map(r => r.map(esc).join(';')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `negociacoes-concluidas${mesConcluidas ? '_' + mesConcluidas : ''}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const handleClienteAdicionado = async () => {
     setShowForm(false)
@@ -145,6 +184,22 @@ export default function Dashboard({ session }) {
       )}
 
       <div className="dashboard-content">
+        <div className="dash-tabs">
+          <button
+            className={`dash-tab ${dashTab === 'clientes' ? 'active' : ''}`}
+            onClick={() => setDashTab('clientes')}
+          >
+            Clientes
+          </button>
+          <button
+            className={`dash-tab ${dashTab === 'concluidas' ? 'active' : ''}`}
+            onClick={() => setDashTab('concluidas')}
+          >
+            Negociações concluídas
+          </button>
+        </div>
+
+        {dashTab === 'clientes' && (<>
         <div className="filters-section">
           <div className="filters">
             <div className="filter-group">
@@ -265,6 +320,98 @@ export default function Dashboard({ session }) {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+        </>)}
+
+        {dashTab === 'concluidas' && (
+          <div className="concluidas-view">
+            <div className="filters-section">
+              <div className="filters">
+                <div className="filter-group">
+                  <label>Mês da conclusão</label>
+                  <input
+                    type="month"
+                    value={mesConcluidas}
+                    onChange={(e) => setMesConcluidas(e.target.value)}
+                  />
+                </div>
+                {mesConcluidas && (
+                  <div className="filter-group">
+                    <label>&nbsp;</label>
+                    <button className="btn-exportar" onClick={() => setMesConcluidas('')}>Limpar mês</button>
+                  </div>
+                )}
+              </div>
+              <div className="header-buttons">
+                <button onClick={exportarConcluidas} className="btn-exportar">⭳ Exportar</button>
+              </div>
+            </div>
+
+            <div className="stats">
+              <div className="stat-card">
+                <div className="stat-label">Acordos {mesConcluidas ? 'no mês' : '(total)'}</div>
+                <div className="stat-value">{concluidasFiltradas.length}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">Valor formalizado</div>
+                <div className="stat-value">R$ {fmtMoeda(totalAcordoConc)}</div>
+              </div>
+              <div className="stat-card stat-honorarios">
+                <div className="stat-label">Honorários do escritório</div>
+                <div className="stat-value">R$ {fmtMoeda(totalHonorConc)}</div>
+              </div>
+              <div className="stat-card stat-comissao">
+                <div className="stat-label">Comissão Julia (5%)</div>
+                <div className="stat-value">R$ {fmtMoeda(totalComissaoJulia)}</div>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="loading">Carregando...</div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="clientes-table">
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Data</th>
+                      <th>Valor do acordo</th>
+                      <th>Honorários</th>
+                      <th>Comissão Julia (5%)</th>
+                      <th>Responsável</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {concluidasFiltradas.length === 0 ? (
+                      <tr><td colSpan="6" className="empty-message">Nenhuma negociação concluída neste período</td></tr>
+                    ) : (
+                      concluidasFiltradas.map(n => (
+                        <tr key={n.id}>
+                          <td className="cliente-name">{nomePorCliente[n.cliente_id] || '—'}</td>
+                          <td>{fmtData(n.data_formalizacao)}</td>
+                          <td>R$ {fmtMoeda(n.valor_final_acordo)}</td>
+                          <td>R$ {fmtMoeda(n.valor_honorarios)}</td>
+                          <td className="col-comissao">R$ {fmtMoeda(Number(n.valor_honorarios || 0) * COMISSAO_JULIA)}</td>
+                          <td>{n.responsavel || '—'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                  {concluidasFiltradas.length > 0 && (
+                    <tfoot>
+                      <tr className="linha-total">
+                        <td colSpan="2"><strong>TOTAL</strong></td>
+                        <td><strong>R$ {fmtMoeda(totalAcordoConc)}</strong></td>
+                        <td><strong>R$ {fmtMoeda(totalHonorConc)}</strong></td>
+                        <td className="col-comissao"><strong>R$ {fmtMoeda(totalComissaoJulia)}</strong></td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
