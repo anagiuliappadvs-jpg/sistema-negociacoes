@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
-import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, updateLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida, getDividasByCliente, saveDivida, deleteDivida } from '../lib/supabase'
+import { updateCliente, deleteCliente, getLigacoesByCliente, saveLigacao, updateLigacao, deleteLigacao, getNegociacoesConcluidas, saveNegociacaoConcluida, getDividasByCliente, saveDivida, updateDivida, deleteDivida, getDocumentos, uploadDocumento, getDocumentoUrl, deleteDocumento } from '../lib/supabase'
 import './ClienteDetalhes.css'
 
 // Data de hoje no fuso local (evita o "pulo" de um dia do toISOString em UTC)
@@ -45,6 +45,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     resumo: '',
   })
   const [conclusaoForm, setConclausaoForm] = useState({
+    divida_id: '',
     valor_divida_atualizado: cliente.valor_divida_atualizado ?? '',
     valor_final_acordo: '',
     percentual_honorarios: cliente.percentual_honorarios ?? 20,
@@ -52,6 +53,8 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     data_formalizacao: hojeLocal(),
     responsavel: '',
   })
+  const [documentos, setDocumentos] = useState([])
+  const [enviandoDoc, setEnviandoDoc] = useState(false)
   const [valorDisponivel, setValorDisponivel] = useState(cliente.valor_disponivel || '')
   const [dados, setDados] = useState(cliente)
   const [editando, setEditando] = useState(false)
@@ -109,10 +112,12 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     const { data: ligacoesData } = await getLigacoesByCliente(cliente.id)
     const { data: negoData } = await getNegociacoesConcluidas(cliente.id)
     const { data: dividasData } = await getDividasByCliente(cliente.id)
+    const { data: docsData } = await getDocumentos(cliente.id)
 
     setLigacoes(ligacoesData || [])
     setNegociacoesConcluidas(negoData || [])
     setDividas(dividasData || [])
+    setDocumentos(docsData || [])
     setLoading(false)
   }
 
@@ -148,11 +153,20 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     return (desconto * p / 100).toFixed(2)
   }
 
+  // dívidas ainda em aberto (principal + adicionais não concluídas)
+  const dividasEmAberto = [
+    ...(dados.principal_concluida ? [] : [{ id: '', label: `Dívida principal — ${dados.banco || 'principal'}`, banco: dados.banco, valor: dados.valor_divida_atualizado, pct: dados.percentual_honorarios }]),
+    ...dividas.filter(d => d.status !== 'concluido').map(d => ({ id: d.id, label: `${d.banco || 'Dívida'}`, banco: d.banco, valor: d.valor_divida_atualizado, pct: d.percentual_honorarios })),
+  ]
+
   const handleConcluirNegociacao = async (e) => {
     e.preventDefault()
 
+    const dividaId = conclusaoForm.divida_id || null
+
     const { error } = await saveNegociacaoConcluida({
       cliente_id: cliente.id,
+      divida_id: dividaId,
       valor_divida_atualizado: conclusaoForm.valor_divida_atualizado !== '' ? parseFloat(conclusaoForm.valor_divida_atualizado) : null,
       valor_final_acordo: parseFloat(conclusaoForm.valor_final_acordo),
       valor_honorarios: parseFloat(conclusaoForm.valor_honorarios) || 0,
@@ -161,10 +175,56 @@ export default function ClienteDetalhes({ cliente, onBack }) {
       created_at: new Date().toISOString(),
     })
 
-    if (!error) {
-      await updateCliente(cliente.id, { status: 'concluido' })
-      setShowConcluir(false)
-      onBack()
+    if (error) {
+      alert('Erro ao concluir: ' + (error.message || error))
+      return
+    }
+
+    // marca a dívida escolhida como concluída
+    if (dividaId) {
+      await updateDivida(dividaId, { status: 'concluido' })
+    }
+
+    // o cliente só vira "concluído" quando TODAS as dívidas estiverem concluídas
+    const principalOk = dividaId === null ? true : dados.principal_concluida === true
+    const adicionaisOk = dividas.every(d => (d.id === dividaId ? true : d.status === 'concluido'))
+    const tudoConcluido = principalOk && adicionaisOk
+
+    const cliUpdates = {}
+    if (dividaId === null) cliUpdates.principal_concluida = true
+    if (tudoConcluido) cliUpdates.status = 'concluido'
+    if (Object.keys(cliUpdates).length) await updateCliente(cliente.id, cliUpdates)
+
+    setShowConcluir(false)
+    onBack()
+  }
+
+  const handleUploadDoc = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 25 * 1024 * 1024) {
+      alert('Arquivo muito grande (máx. 25 MB).')
+      e.target.value = ''
+      return
+    }
+    setEnviandoDoc(true)
+    const { error } = await uploadDocumento(cliente.id, file)
+    setEnviandoDoc(false)
+    e.target.value = ''
+    if (error) alert('Erro ao enviar: ' + (error.message || error))
+    else loadData()
+  }
+
+  const handleAbrirDoc = async (path) => {
+    const { url, error } = await getDocumentoUrl(path)
+    if (error || !url) alert('Erro ao abrir o documento.')
+    else window.open(url, '_blank')
+  }
+
+  const handleDeleteDoc = async (doc) => {
+    if (window.confirm(`Remover o documento "${doc.nome}"?`)) {
+      await deleteDocumento(doc.id, doc.path)
+      loadData()
     }
   }
 
@@ -551,7 +611,12 @@ export default function ClienteDetalhes({ cliente, onBack }) {
           <div className="divida-card divida-principal">
             <div className="divida-topo">
               <span className="divida-banco">{dados.banco || 'Múltiplos'}</span>
-              <span className="divida-tag">Dívida principal</span>
+              <div className="divida-badges">
+                <span className="divida-tag">Dívida principal</span>
+                <span className={`divida-status ${(dados.principal_concluida || dados.status === 'concluido') ? 'status-ok' : 'status-open'}`}>
+                  {(dados.principal_concluida || dados.status === 'concluido') ? 'Concluída' : 'Em negociação'}
+                </span>
+              </div>
             </div>
             <div className="divida-meta">
               Tipo: {dados.tipo_divida || '—'}
@@ -564,7 +629,12 @@ export default function ClienteDetalhes({ cliente, onBack }) {
             <div key={d.id} className="divida-card">
               <div className="divida-topo">
                 <span className="divida-banco">{d.banco || '—'}</span>
-                <button onClick={() => handleDeleteDivida(d.id)} className="btn-delete">Remover</button>
+                <div className="divida-badges">
+                  <span className={`divida-status ${d.status === 'concluido' ? 'status-ok' : 'status-open'}`}>
+                    {d.status === 'concluido' ? 'Concluída' : 'Em negociação'}
+                  </span>
+                  <button onClick={() => handleDeleteDivida(d.id)} className="btn-delete">Remover</button>
+                </div>
               </div>
               <div className="divida-meta">
                 Tipo: {d.tipo_divida || '—'}
@@ -575,6 +645,36 @@ export default function ClienteDetalhes({ cliente, onBack }) {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="documentos-section">
+        <div className="section-header">
+          <h3>Documentos ({documentos.length})</h3>
+          <label className={`btn-add btn-upload ${enviandoDoc ? 'is-loading' : ''}`}>
+            {enviandoDoc ? 'Enviando...' : '+ Adicionar documento'}
+            <input type="file" onChange={handleUploadDoc} disabled={enviandoDoc} style={{ display: 'none' }} />
+          </label>
+        </div>
+        {documentos.length === 0 ? (
+          <div className="empty-state"><p>Nenhum documento anexado ainda</p></div>
+        ) : (
+          <div className="documentos-list">
+            {documentos.map(doc => (
+              <div key={doc.id} className="documento-item">
+                <div className="doc-info">
+                  <span className="doc-nome">📎 {doc.nome}</span>
+                  <span className="doc-meta">
+                    {formatarDataBR(doc.created_at)}{doc.tamanho ? ` • ${(doc.tamanho / 1024).toFixed(0)} KB` : ''}
+                  </span>
+                </div>
+                <div className="doc-acoes">
+                  <button onClick={() => handleAbrirDoc(doc.path)} className="btn-editar-ligacao">Abrir</button>
+                  <button onClick={() => handleDeleteDoc(doc)} className="btn-delete">Remover</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="tab-buttons">
@@ -733,7 +833,33 @@ export default function ClienteDetalhes({ cliente, onBack }) {
 
           <div className="conclusao-section">
             <h3>Marcar negociação como concluída</h3>
+            {dividasEmAberto.length === 0 ? (
+              <p className="tudo-concluido">✓ Todas as dívidas deste cliente já foram concluídas.</p>
+            ) : (
             <form onSubmit={handleConcluirNegociacao} className="conclusao-form">
+              <div className="form-row">
+                <div className="form-group full-width">
+                  <label>Qual dívida foi concluída? *</label>
+                  <select
+                    value={conclusaoForm.divida_id}
+                    onChange={(e) => {
+                      const id = e.target.value
+                      const d = dividasEmAberto.find(x => String(x.id) === String(id))
+                      setConclausaoForm({
+                        ...conclusaoForm,
+                        divida_id: id,
+                        valor_divida_atualizado: d && d.valor != null ? d.valor : conclusaoForm.valor_divida_atualizado,
+                        percentual_honorarios: d && d.pct != null ? d.pct : conclusaoForm.percentual_honorarios,
+                      })
+                    }}
+                  >
+                    {dividasEmAberto.map(d => (
+                      <option key={d.id || 'principal'} value={d.id}>{d.label}</option>
+                    ))}
+                  </select>
+                  <span className="helper-text">Só esta dívida será concluída; as outras continuam em negociação.</span>
+                </div>
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Valor atualizado da dívida *</label>
@@ -850,6 +976,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

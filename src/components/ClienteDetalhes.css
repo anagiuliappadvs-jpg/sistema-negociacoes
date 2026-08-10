@@ -194,6 +194,95 @@
   white-space: pre-wrap;
 }
 
+.divida-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.divida-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+
+.divida-status.status-ok {
+  background-color: var(--bg-success, #eaf6ec);
+  color: #1e6b34;
+}
+
+.divida-status.status-open {
+  background-color: var(--bg-warning, #fff4e0);
+  color: #8a5a00;
+}
+
+.tudo-concluido {
+  font-size: 14px;
+  color: #1e6b34;
+  font-weight: 600;
+  padding: 0.5rem 0;
+}
+
+/* Documentos */
+.documentos-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+}
+
+.btn-upload {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.btn-upload.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.documentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.documento-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+}
+
+.doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.doc-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.doc-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.doc-acoes {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .cliente-info-card {
   display: grid;
   grid-template-columns: 1fr 1fr;

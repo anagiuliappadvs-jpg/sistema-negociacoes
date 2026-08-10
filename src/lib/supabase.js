@@ -219,6 +219,18 @@ export async function saveDivida(divida) {
   return { data, error }
 }
 
+export async function updateDivida(id, updates) {
+  if (!supabase) return { error: 'Supabase não configurado' }
+
+  const { data, error } = await supabase
+    .from('dividas')
+    .update(updates)
+    .eq('id', id)
+    .select()
+
+  return { data, error }
+}
+
 export async function deleteDivida(id) {
   if (!supabase) return { error: 'Supabase não configurado' }
 
@@ -226,6 +238,57 @@ export async function deleteDivida(id) {
     .from('dividas')
     .delete()
     .eq('id', id)
+
+  return { error }
+}
+
+// Documentos (arquivos anexados ao cliente)
+export async function getDocumentos(clienteId) {
+  if (!supabase) return { data: [], error: null }
+
+  const { data, error } = await supabase
+    .from('documentos')
+    .select('*')
+    .eq('cliente_id', clienteId)
+    .order('created_at', { ascending: false })
+
+  return { data, error }
+}
+
+export async function uploadDocumento(clienteId, file) {
+  if (!supabase) return { error: 'Supabase não configurado' }
+
+  const nomeLimpo = file.name.replace(/[^\w.\-]+/g, '_')
+  const path = `${clienteId}/${Date.now()}_${nomeLimpo}`
+
+  const { error: upErr } = await supabase.storage
+    .from('documentos')
+    .upload(path, file, { cacheControl: '3600', upsert: false })
+  if (upErr) return { error: upErr }
+
+  const { data, error } = await supabase
+    .from('documentos')
+    .insert([{ cliente_id: clienteId, nome: file.name, path, tamanho: file.size }])
+    .select()
+
+  return { data, error }
+}
+
+export async function getDocumentoUrl(path) {
+  if (!supabase) return { error: 'Supabase não configurado' }
+
+  const { data, error } = await supabase.storage
+    .from('documentos')
+    .createSignedUrl(path, 60 * 10) // link válido por 10 minutos
+
+  return { url: data?.signedUrl, error }
+}
+
+export async function deleteDocumento(id, path) {
+  if (!supabase) return { error: 'Supabase não configurado' }
+
+  await supabase.storage.from('documentos').remove([path])
+  const { error } = await supabase.from('documentos').delete().eq('id', id)
 
   return { error }
 }
