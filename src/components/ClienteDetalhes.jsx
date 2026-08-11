@@ -164,23 +164,34 @@ export default function ClienteDetalhes({ cliente, onBack }) {
 
     const dividaId = conclusaoForm.divida_id || null
 
-    const { error } = await saveNegociacaoConcluida({
+    const baseConclusao = {
       cliente_id: cliente.id,
-      divida_id: dividaId,
       valor_divida_atualizado: conclusaoForm.valor_divida_atualizado !== '' ? parseFloat(conclusaoForm.valor_divida_atualizado) : null,
       valor_final_acordo: parseFloat(conclusaoForm.valor_final_acordo),
       valor_honorarios: parseFloat(conclusaoForm.valor_honorarios) || 0,
       data_formalizacao: conclusaoForm.data_formalizacao,
       responsavel: conclusaoForm.responsavel,
       created_at: new Date().toISOString(),
-    })
+    }
 
+    const { error } = await saveNegociacaoConcluida({ ...baseConclusao, divida_id: dividaId })
+
+    // fallback: banco ainda sem a atualização (coluna divida_id) -> comportamento antigo
     if (error) {
+      const semColuna = /divida_id|column|schema cache|PGRST204/i.test(error.message || String(error))
+      if (semColuna) {
+        const { error: e2 } = await saveNegociacaoConcluida(baseConclusao)
+        if (e2) { alert('Erro ao concluir: ' + (e2.message || e2)); return }
+        await updateCliente(cliente.id, { status: 'concluido' })
+        setShowConcluir(false)
+        onBack()
+        return
+      }
       alert('Erro ao concluir: ' + (error.message || error))
       return
     }
 
-    // marca a dívida escolhida como concluída
+    // (banco atualizado) marca a dívida escolhida como concluída
     if (dividaId) {
       await updateDivida(dividaId, { status: 'concluido' })
     }
