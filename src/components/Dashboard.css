@@ -184,6 +184,19 @@
   color: #c0392b;
 }
 
+.editneg-cliente {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+}
+
+.editneg-desc {
+  font-size: 13px;
+  color: #1e6b34;
+  margin: 0 0 1rem;
+}
+
 .col-check {
   text-align: center;
 }

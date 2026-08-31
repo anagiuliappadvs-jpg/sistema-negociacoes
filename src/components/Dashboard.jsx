@@ -20,6 +20,8 @@ export default function Dashboard({ session }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [dashTab, setDashTab] = useState('clientes')
   const [mesConcluidas, setMesConcluidas] = useState('')
+  const [editNeg, setEditNeg] = useState(null)
+  const [negForm, setNegForm] = useState({})
 
   const COMISSAO_JULIA = 0.05
 
@@ -75,6 +77,32 @@ export default function Dashboard({ session }) {
       setNegociacoes(prev => prev.map(x => x.id === neg.id ? { ...x, repasse_julia: !checked } : x))
       alert('Erro ao salvar o repasse: ' + (error.message || error))
     }
+  }
+
+  const abrirEdicaoNeg = (n) => {
+    setNegForm({
+      valor_divida_atualizado: n.valor_divida_atualizado ?? '',
+      valor_final_acordo: n.valor_final_acordo ?? '',
+      valor_honorarios: n.valor_honorarios ?? '',
+      data_formalizacao: String(n.data_formalizacao).slice(0, 10),
+      responsavel: n.responsavel || '',
+    })
+    setEditNeg(n)
+  }
+
+  const salvarEdicaoNeg = async (e) => {
+    e.preventDefault()
+    const updates = {
+      valor_divida_atualizado: negForm.valor_divida_atualizado !== '' ? parseFloat(negForm.valor_divida_atualizado) : null,
+      valor_final_acordo: parseFloat(negForm.valor_final_acordo) || 0,
+      valor_honorarios: parseFloat(negForm.valor_honorarios) || 0,
+      data_formalizacao: negForm.data_formalizacao,
+      responsavel: negForm.responsavel.trim() || null,
+    }
+    const { error } = await updateNegociacaoConcluida(editNeg.id, updates)
+    if (error) { alert('Erro ao salvar: ' + (error.message || error)); return }
+    setNegociacoes(prev => prev.map(x => x.id === editNeg.id ? { ...x, ...updates } : x))
+    setEditNeg(null)
   }
 
   const exportarConcluidas = () => {
@@ -195,6 +223,62 @@ export default function Dashboard({ session }) {
           onClose={() => setShowForm(false)}
           onClienteAdicionado={handleClienteAdicionado}
         />
+      )}
+
+      {editNeg && (
+        <div className="modal-overlay" onClick={() => setEditNeg(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Editar negociação concluída</h2>
+              <button onClick={() => setEditNeg(null)} className="close-button">×</button>
+            </div>
+            <form onSubmit={salvarEdicaoNeg} className="cliente-form">
+              <div className="form-section">
+                <p className="editneg-cliente">{nomePorCliente[editNeg.cliente_id] || 'Cliente'}</p>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Valor atualizado da dívida</label>
+                    <input type="number" step="0.01" value={negForm.valor_divida_atualizado}
+                      onChange={(e) => setNegForm({ ...negForm, valor_divida_atualizado: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label>Valor do acordo</label>
+                    <input type="number" step="0.01" value={negForm.valor_final_acordo}
+                      onChange={(e) => setNegForm({ ...negForm, valor_final_acordo: e.target.value })} required />
+                  </div>
+                </div>
+                {(() => {
+                  const a = parseFloat(negForm.valor_divida_atualizado), f = parseFloat(negForm.valor_final_acordo)
+                  if (isNaN(a) || isNaN(f) || a <= 0 || a - f <= 0) return null
+                  const d = a - f, p = (d / a) * 100
+                  return <p className="editneg-desc">Desconto: <strong>R$ {fmtMoeda(d)}</strong> ({p.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)</p>
+                })()}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Honorários do escritório</label>
+                    <input type="number" step="0.01" value={negForm.valor_honorarios}
+                      onChange={(e) => setNegForm({ ...negForm, valor_honorarios: e.target.value })} required />
+                    <span className="helper-text">Comissão Julia (5%): R$ {fmtMoeda((parseFloat(negForm.valor_honorarios) || 0) * COMISSAO_JULIA)}</span>
+                  </div>
+                  <div className="form-group">
+                    <label>Data de formalização</label>
+                    <input type="date" value={negForm.data_formalizacao}
+                      onChange={(e) => setNegForm({ ...negForm, data_formalizacao: e.target.value })} required />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Responsável</label>
+                  <input type="text" value={negForm.responsavel}
+                    onChange={(e) => setNegForm({ ...negForm, responsavel: e.target.value })} />
+                </div>
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn-submit">Salvar alterações</button>
+                <button type="button" onClick={() => setEditNeg(null)} className="btn-cancel">Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       <div className="dashboard-content">
@@ -399,11 +483,12 @@ export default function Dashboard({ session }) {
                       <th>Comissão Julia (5%)</th>
                       <th className="col-check">Repasse feito?</th>
                       <th>Responsável</th>
+                      <th>Ação</th>
                     </tr>
                   </thead>
                   <tbody>
                     {concluidasFiltradas.length === 0 ? (
-                      <tr><td colSpan="7" className="empty-message">Nenhuma negociação concluída neste período</td></tr>
+                      <tr><td colSpan="8" className="empty-message">Nenhuma negociação concluída neste período</td></tr>
                     ) : (
                       concluidasFiltradas.map(n => (
                         <tr key={n.id} className={n.repasse_julia ? 'repasse-ok' : ''}>
@@ -423,6 +508,9 @@ export default function Dashboard({ session }) {
                             </label>
                           </td>
                           <td>{n.responsavel || '—'}</td>
+                          <td>
+                            <button className="btn-details" onClick={() => abrirEdicaoNeg(n)}>Editar</button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -434,6 +522,7 @@ export default function Dashboard({ session }) {
                         <td><strong>R$ {fmtMoeda(totalAcordoConc)}</strong></td>
                         <td><strong>R$ {fmtMoeda(totalHonorConc)}</strong></td>
                         <td className="col-comissao"><strong>R$ {fmtMoeda(totalComissaoJulia)}</strong></td>
+                        <td></td>
                         <td></td>
                         <td></td>
                       </tr>
