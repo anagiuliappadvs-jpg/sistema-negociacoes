@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { getClientes, getTodasNegociacoesConcluidas } from '../lib/supabase'
+import { getClientes, getTodasNegociacoesConcluidas, updateNegociacaoConcluida } from '../lib/supabase'
 import ClienteForm from './ClienteForm'
 import ClienteDetalhes from './ClienteDetalhes'
 import './Dashboard.css'
@@ -63,18 +63,32 @@ export default function Dashboard({ session }) {
   const totalAcordoConc = concluidasFiltradas.reduce((s, n) => s + Number(n.valor_final_acordo || 0), 0)
   const totalHonorConc = concluidasFiltradas.reduce((s, n) => s + Number(n.valor_honorarios || 0), 0)
   const totalComissaoJulia = totalHonorConc * COMISSAO_JULIA
+  const comissaoPendente = concluidasFiltradas
+    .filter(n => !n.repasse_julia)
+    .reduce((s, n) => s + Number(n.valor_honorarios || 0) * COMISSAO_JULIA, 0)
+
+  const toggleRepasse = async (neg, checked) => {
+    setNegociacoes(prev => prev.map(x => x.id === neg.id ? { ...x, repasse_julia: checked } : x))
+    const { error } = await updateNegociacaoConcluida(neg.id, { repasse_julia: checked })
+    if (error) {
+      // desfaz em caso de erro
+      setNegociacoes(prev => prev.map(x => x.id === neg.id ? { ...x, repasse_julia: !checked } : x))
+      alert('Erro ao salvar o repasse: ' + (error.message || error))
+    }
+  }
 
   const exportarConcluidas = () => {
-    const cols = ['Cliente', 'Data da formalização', 'Valor do acordo', 'Honorários do escritório', 'Comissão Julia (5%)', 'Responsável']
+    const cols = ['Cliente', 'Data da formalização', 'Valor do acordo', 'Honorários do escritório', 'Comissão Julia (5%)', 'Repasse feito?', 'Responsável']
     const linhas = concluidasFiltradas.map(n => [
       nomePorCliente[n.cliente_id] || '—',
       fmtData(n.data_formalizacao),
       fmtMoeda(n.valor_final_acordo),
       fmtMoeda(n.valor_honorarios),
       fmtMoeda(Number(n.valor_honorarios || 0) * COMISSAO_JULIA),
+      n.repasse_julia ? 'Sim' : 'Não',
       n.responsavel || '',
     ])
-    linhas.push(['TOTAL', '', fmtMoeda(totalAcordoConc), fmtMoeda(totalHonorConc), fmtMoeda(totalComissaoJulia), ''])
+    linhas.push(['TOTAL', '', fmtMoeda(totalAcordoConc), fmtMoeda(totalHonorConc), fmtMoeda(totalComissaoJulia), '', ''])
     const esc = v => '"' + (v == null ? '' : String(v)).replace(/"/g, '""') + '"'
     const csv = '﻿' + [cols, ...linhas].map(r => r.map(esc).join(';')).join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -365,6 +379,10 @@ export default function Dashboard({ session }) {
                 <div className="stat-label">Comissão Julia (5%)</div>
                 <div className="stat-value">R$ {fmtMoeda(totalComissaoJulia)}</div>
               </div>
+              <div className="stat-card stat-pendente">
+                <div className="stat-label">Pendente de repasse</div>
+                <div className="stat-value">R$ {fmtMoeda(comissaoPendente)}</div>
+              </div>
             </div>
 
             {loading ? (
@@ -379,20 +397,31 @@ export default function Dashboard({ session }) {
                       <th>Valor do acordo</th>
                       <th>Honorários</th>
                       <th>Comissão Julia (5%)</th>
+                      <th className="col-check">Repasse feito?</th>
                       <th>Responsável</th>
                     </tr>
                   </thead>
                   <tbody>
                     {concluidasFiltradas.length === 0 ? (
-                      <tr><td colSpan="6" className="empty-message">Nenhuma negociação concluída neste período</td></tr>
+                      <tr><td colSpan="7" className="empty-message">Nenhuma negociação concluída neste período</td></tr>
                     ) : (
                       concluidasFiltradas.map(n => (
-                        <tr key={n.id}>
+                        <tr key={n.id} className={n.repasse_julia ? 'repasse-ok' : ''}>
                           <td className="cliente-name">{nomePorCliente[n.cliente_id] || '—'}</td>
                           <td>{fmtData(n.data_formalizacao)}</td>
                           <td>R$ {fmtMoeda(n.valor_final_acordo)}</td>
                           <td>R$ {fmtMoeda(n.valor_honorarios)}</td>
                           <td className="col-comissao">R$ {fmtMoeda(Number(n.valor_honorarios || 0) * COMISSAO_JULIA)}</td>
+                          <td className="col-check">
+                            <label className="repasse-check">
+                              <input
+                                type="checkbox"
+                                checked={!!n.repasse_julia}
+                                onChange={(e) => toggleRepasse(n, e.target.checked)}
+                              />
+                              <span>{n.repasse_julia ? 'Repassado' : 'Pendente'}</span>
+                            </label>
+                          </td>
                           <td>{n.responsavel || '—'}</td>
                         </tr>
                       ))
@@ -405,6 +434,7 @@ export default function Dashboard({ session }) {
                         <td><strong>R$ {fmtMoeda(totalAcordoConc)}</strong></td>
                         <td><strong>R$ {fmtMoeda(totalHonorConc)}</strong></td>
                         <td className="col-comissao"><strong>R$ {fmtMoeda(totalComissaoJulia)}</strong></td>
+                        <td></td>
                         <td></td>
                       </tr>
                     </tfoot>
