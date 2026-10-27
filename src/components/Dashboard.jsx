@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { getClientes, getTodasNegociacoesConcluidas, updateNegociacaoConcluida } from '../lib/supabase'
+import { getClientes, getTodasNegociacoesConcluidas, updateNegociacaoConcluida, deleteNegociacaoConcluida } from '../lib/supabase'
 import ClienteForm from './ClienteForm'
 import ClienteDetalhes from './ClienteDetalhes'
 import './Dashboard.css'
@@ -105,8 +105,17 @@ export default function Dashboard({ session }) {
     setEditNeg(null)
   }
 
+  const excluirNeg = async (n) => {
+    const nome = nomePorCliente[n.cliente_id] || 'este cliente'
+    if (!window.confirm(`Excluir esta negociação concluída de ${nome} (R$ ${fmtMoeda(n.valor_final_acordo)})?\n\nNão dá para desfazer.`)) return
+    const { error } = await deleteNegociacaoConcluida(n.id)
+    if (error) { alert('Erro ao excluir: ' + (error.message || error)); return }
+    setNegociacoes(prev => prev.filter(x => x.id !== n.id))
+    if (editNeg && editNeg.id === n.id) setEditNeg(null)
+  }
+
   const exportarConcluidas = () => {
-    const cols = ['Cliente', 'Data da formalização', 'Valor do acordo', 'Honorários do escritório', 'Comissão Julia (5%)', 'Repasse feito?', 'Responsável']
+    const cols = ['Cliente', 'Data da formalização', 'Valor do acordo', 'Honorários do escritório', 'Comissão (5%)', 'Repasse feito?', 'Responsável']
     const linhas = concluidasFiltradas.map(n => [
       nomePorCliente[n.cliente_id] || '—',
       fmtData(n.data_formalizacao),
@@ -258,7 +267,7 @@ export default function Dashboard({ session }) {
                     <label>Honorários do escritório</label>
                     <input type="number" step="0.01" value={negForm.valor_honorarios}
                       onChange={(e) => setNegForm({ ...negForm, valor_honorarios: e.target.value })} required />
-                    <span className="helper-text">Comissão Julia (5%): R$ {fmtMoeda((parseFloat(negForm.valor_honorarios) || 0) * COMISSAO_JULIA)}</span>
+                    <span className="helper-text">Comissão (5%): R$ {fmtMoeda((parseFloat(negForm.valor_honorarios) || 0) * COMISSAO_JULIA)}</span>
                   </div>
                   <div className="form-group">
                     <label>Data de formalização</label>
@@ -460,7 +469,7 @@ export default function Dashboard({ session }) {
                 <div className="stat-value">R$ {fmtMoeda(totalHonorConc)}</div>
               </div>
               <div className="stat-card stat-comissao">
-                <div className="stat-label">Comissão Julia (5%)</div>
+                <div className="stat-label">Comissão (5%)</div>
                 <div className="stat-value">R$ {fmtMoeda(totalComissaoJulia)}</div>
               </div>
               <div className="stat-card stat-pendente">
@@ -480,7 +489,7 @@ export default function Dashboard({ session }) {
                       <th>Data</th>
                       <th>Valor do acordo</th>
                       <th>Honorários</th>
-                      <th>Comissão Julia (5%)</th>
+                      <th>Comissão (5%)</th>
                       <th className="col-check">Repasse feito?</th>
                       <th>Responsável</th>
                       <th>Ação</th>
@@ -509,7 +518,10 @@ export default function Dashboard({ session }) {
                           </td>
                           <td>{n.responsavel || '—'}</td>
                           <td>
-                            <button className="btn-details" onClick={() => abrirEdicaoNeg(n)}>Editar</button>
+                            <div className="acoes-neg">
+                              <button className="btn-details" onClick={() => abrirEdicaoNeg(n)}>Editar</button>
+                              <button className="btn-excluir-neg" onClick={() => excluirNeg(n)}>Excluir</button>
+                            </div>
                           </td>
                         </tr>
                       ))

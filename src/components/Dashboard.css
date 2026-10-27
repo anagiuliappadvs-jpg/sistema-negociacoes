@@ -197,6 +197,27 @@
   margin: 0 0 1rem;
 }
 
+.acoes-neg {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.btn-excluir-neg {
+  padding: 0.4rem 0.8rem;
+  background-color: transparent;
+  border: 0.5px solid #e0b4b0;
+  color: #c0392b;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-excluir-neg:hover {
+  background-color: #fdecea;
+}
+
 .col-check {
   text-align: center;
 }
