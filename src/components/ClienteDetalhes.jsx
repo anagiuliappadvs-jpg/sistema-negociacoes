@@ -212,6 +212,18 @@ export default function ClienteDetalhes({ cliente, onBack }) {
     onBack()
   }
 
+  // troca rápida do responsável (salva na hora, sem entrar no modo de edição)
+  const handleResponsavelInline = async (value) => {
+    const novo = value || null
+    const anterior = dados.responsavel
+    setDados({ ...dados, responsavel: novo })
+    const { error } = await updateCliente(cliente.id, { responsavel: novo })
+    if (error) {
+      setDados({ ...dados, responsavel: anterior })
+      alert('Erro ao salvar o responsável: ' + (error.message || error))
+    }
+  }
+
   const handleUploadDoc = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -463,7 +475,14 @@ export default function ClienteDetalhes({ cliente, onBack }) {
             <p className="info-value">{dados.nome}</p>
             <p className="info-meta">{dados.cpf_cnpj} • {dados.telefone}</p>
             {dados.email && <p className="info-meta">{dados.email}</p>}
-            <p className="info-meta">Responsável: {dados.responsavel || '—'}</p>
+            <div className="responsavel-inline">
+              <label>Responsável:</label>
+              <select value={dados.responsavel || ''} onChange={(e) => handleResponsavelInline(e.target.value)}>
+                <option value="">— Não definido —</option>
+                <option value="Julia">Julia</option>
+                <option value="Maria Beatriz">Maria Beatriz</option>
+              </select>
+            </div>
             <span className={`status-badge status-${dados.status}`}>
               {dados.status === 'em-negociacao' ? 'Em negociação' : 'Concluído'}
             </span>
