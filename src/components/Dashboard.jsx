@@ -17,6 +17,7 @@ export default function Dashboard({ session }) {
   const [statusFilter, setStatusFilter] = useState('em-negociacao')
   const [valorFilter, setValorFilter] = useState('todos')
   const [mesFilter, setMesFilter] = useState('')
+  const [responsavelFilter, setResponsavelFilter] = useState('todos')
   const [searchTerm, setSearchTerm] = useState('')
   const [dashTab, setDashTab] = useState('clientes')
   const [mesConcluidas, setMesConcluidas] = useState('')
@@ -164,12 +165,20 @@ export default function Dashboard({ session }) {
       mesMatch = mesesPorCliente[cliente.id] ? mesesPorCliente[cliente.id].has(mesFilter) : false
     }
 
+    // Filtro de responsável
+    let respMatch = true
+    if (responsavelFilter === '__sem__') {
+      respMatch = !cliente.responsavel
+    } else if (responsavelFilter !== 'todos') {
+      respMatch = cliente.responsavel === responsavelFilter
+    }
+
     // Filtro de busca
     const searchMatch =
       cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cliente.cpf_cnpj.includes(searchTerm)
 
-    return statusMatch && valorMatch && mesMatch && searchMatch
+    return statusMatch && valorMatch && mesMatch && respMatch && searchMatch
   })
 
   const stats = {
@@ -179,10 +188,10 @@ export default function Dashboard({ session }) {
   }
 
   const exportarCSV = () => {
-    const cols = ['Nome', 'CPF/CNPJ', 'Telefone', 'Email', 'Banco', 'Tipo de dívida',
+    const cols = ['Nome', 'Responsável', 'CPF/CNPJ', 'Telefone', 'Email', 'Banco', 'Tipo de dívida',
       'Status', 'Valor atualizado', '% Honorários', 'Último contato', 'Observações']
     const linhas = filteredClientes.map(c => [
-      c.nome, c.cpf_cnpj, c.telefone, c.email, c.banco, c.tipo_divida,
+      c.nome, c.responsavel || '', c.cpf_cnpj, c.telefone, c.email, c.banco, c.tipo_divida,
       c.status === 'concluido' ? 'Concluído' : 'Em negociação',
       c.valor_divida_atualizado != null ? fmtMoeda(c.valor_divida_atualizado) : '',
       c.percentual_honorarios != null ? c.percentual_honorarios : '',
@@ -328,6 +337,16 @@ export default function Dashboard({ session }) {
             </div>
 
             <div className="filter-group">
+              <label>Responsável</label>
+              <select value={responsavelFilter} onChange={(e) => setResponsavelFilter(e.target.value)}>
+                <option value="todos">Todos</option>
+                <option value="Julia">Julia</option>
+                <option value="Maria Beatriz">Maria Beatriz</option>
+                <option value="__sem__">Sem responsável</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
               <label>Mês de conclusão</label>
               <input
                 type="month"
@@ -384,6 +403,7 @@ export default function Dashboard({ session }) {
               <thead>
                 <tr>
                   <th>Cliente</th>
+                  <th>Responsável</th>
                   <th>Banco/Dívida</th>
                   <th>Valor disponível</th>
                   <th>Último contato</th>
@@ -394,7 +414,7 @@ export default function Dashboard({ session }) {
               <tbody>
                 {filteredClientes.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="empty-message">
+                    <td colSpan="7" className="empty-message">
                       Nenhum cliente encontrado
                     </td>
                   </tr>
@@ -402,6 +422,7 @@ export default function Dashboard({ session }) {
                   filteredClientes.map(cliente => (
                     <tr key={cliente.id}>
                       <td className="cliente-name">{cliente.nome}</td>
+                      <td>{cliente.responsavel || '—'}</td>
                       <td>{cliente.banco || 'Múltiplos'}</td>
                       <td>
                         {cliente.valor_disponivel

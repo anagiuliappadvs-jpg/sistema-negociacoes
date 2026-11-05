@@ -76,6 +76,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
       valor_divida_atualizado: dados.valor_divida_atualizado ?? '',
       percentual_honorarios: dados.percentual_honorarios ?? '',
       status: dados.status || 'em-negociacao',
+      responsavel: dados.responsavel || '',
       observacoes: dados.observacoes || '',
     })
     setEditando(true)
@@ -94,6 +95,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
       valor_divida_atualizado: form.valor_divida_atualizado !== '' ? parseFloat(form.valor_divida_atualizado) : null,
       percentual_honorarios: form.percentual_honorarios !== '' ? parseFloat(form.percentual_honorarios) : null,
       status: form.status,
+      responsavel: form.responsavel || null,
       observacoes: form.observacoes.trim() || null,
       updated_at: new Date().toISOString(),
     }
@@ -461,6 +463,7 @@ export default function ClienteDetalhes({ cliente, onBack }) {
             <p className="info-value">{dados.nome}</p>
             <p className="info-meta">{dados.cpf_cnpj} • {dados.telefone}</p>
             {dados.email && <p className="info-meta">{dados.email}</p>}
+            <p className="info-meta">Responsável: {dados.responsavel || '—'}</p>
             <span className={`status-badge status-${dados.status}`}>
               {dados.status === 'em-negociacao' ? 'Em negociação' : 'Concluído'}
             </span>
@@ -547,6 +550,15 @@ export default function ClienteDetalhes({ cliente, onBack }) {
                 onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 <option value="em-negociacao">Em negociação</option>
                 <option value="concluido">Concluído</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Responsável</label>
+              <select value={form.responsavel || ''}
+                onChange={(e) => setForm({ ...form, responsavel: e.target.value })}>
+                <option value="">— Não definido —</option>
+                <option value="Julia">Julia</option>
+                <option value="Maria Beatriz">Maria Beatriz</option>
               </select>
             </div>
           </div>

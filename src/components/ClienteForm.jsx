@@ -14,6 +14,7 @@ export default function ClienteForm({ onClose, onClienteAdicionado }) {
     valor_divida_atualizado: '',
     percentual_honorarios: 20,
     valor_disponivel: '',
+    responsavel: '',
     observacoes: '',
     status: 'em-negociacao',
   })
@@ -219,6 +220,20 @@ export default function ClienteForm({ onClose, onClienteAdicionado }) {
                 />
                 <span className="helper-text">Pode ser atualizado conforme o cliente comunica</span>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="responsavel">Responsável pela negociação</label>
+              <select
+                id="responsavel"
+                name="responsavel"
+                value={formData.responsavel}
+                onChange={handleChange}
+              >
+                <option value="">Selecione...</option>
+                <option value="Julia">Julia</option>
+                <option value="Maria Beatriz">Maria Beatriz</option>
+              </select>
             </div>
 
             <div className="form-group">
